@@ -1,0 +1,1 @@
+console.log(math.sqrt(144)); // 12
