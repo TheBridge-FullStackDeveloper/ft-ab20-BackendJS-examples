@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 
+const MongoClient = require('mongodb').MongoClient;
+const databaseUrl = "mongodb://localhost:27017/";
+
 const server = express();
 const listenPort = 8889;
 
@@ -44,13 +47,29 @@ server.get('/loadImage', (req, res) => {
 
 server.get('/sayhelloto/:name', (req, res) => {
 
-    // Business logic
-    if( fighters.includes(req.params.name) ) {
-        res.send(`Hello ${ req.params.name }`);
-    }
-    else {
-        res.send(`Who are you?`);
-    }
+    MongoClient.connect(databaseUrl, (err, database) => {
+        if (err) {
+            throw err;
+        }
+
+        const dbFighters = database.db("sfdb");
+
+        dbFighters.fighters.find({nombre:req.params.name.replace("+", " ")}, (err, result) => {
+            if (err) {
+                throw err;
+            }
+
+            // Business logic
+            if( result.length > 0 ) {
+                res.send(`Hello ${ req.params.name }`);
+            }
+            else {
+                res.send(`Who are you?`);
+            }
+
+            dbFighters.close();
+        });
+    }); 
 });
 
 server.get('/question', (req, res) => {
