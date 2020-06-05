@@ -47,29 +47,41 @@ server.get('/loadImage', (req, res) => {
 
 server.get('/sayhelloto/:name', (req, res) => {
 
-    MongoClient.connect(databaseUrl, (err, database) => {
-        if (err) {
-            throw err;
-        }
+    async function userExists(username) {
+        let client, dbFighters;
 
-        const dbFighters = database.db("sfdb");
+        try {
+            // Connect to MongoDB server and use my database
+            client = await MongoClient.connect(databaseUrl);
+            dbFighters = client.db("StreetFighterDB");
 
-        dbFighters.fighters.find({nombre:req.params.name.replace("+", " ")}, (err, result) => {
-            if (err) {
-                throw err;
-            }
+            // Select collection and do CRUD operations
+            let fighters = dbFighters.collection('fighters');
+            let result = await fighters.find({ nombre: username.replace("+", " ") });
 
             // Business logic
-            if( result.length > 0 ) {
-                res.send(`Hello ${ req.params.name }`);
+            if( result.toArray().length > 0 ) {
+                return true;
             }
             else {
-                res.send(`Who are you?`);
+                return false;
             }
+        }
+        catch(error) {
+            console.error(error);
+        }
+        finally {
+            client.close();
+        }
+    }
 
-            dbFighters.close();
-        });
-    }); 
+    // Business logic
+    if( userExists(req.params.name) ) {
+        res.send(`Hello ${ req.params.name }`);
+    }
+    else {
+        res.send(`Who are you?`);
+    }
 });
 
 server.get('/question', (req, res) => {
